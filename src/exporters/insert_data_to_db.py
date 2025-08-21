@@ -2,7 +2,6 @@ import pymysql
 from src.utils.settings import get_database_config
 from src.utils.db_utils import get_db_connection
 from src.utils.logger_config import configure_logger
-
 logger = configure_logger()
 
 def insert_data_to_db():
@@ -10,7 +9,7 @@ def insert_data_to_db():
     logger.info("开始执行 insert_data_to_db")
 
     try:
-        sql_data = get_sql_config()
+        sql_data = get_database_config()
         query = sql_data["rds_license_data"]["sql"]
         values = sql_data["rds_license_data"]["values"]
 

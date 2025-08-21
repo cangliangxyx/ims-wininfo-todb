@@ -1,5 +1,6 @@
 #db_utils.py
-import pymysql
+
+import pymysql, datetime
 from pymysql.err import OperationalError, InternalError, DatabaseError
 from src.utils.settings import get_database_config
 from src.utils.logger_config import configure_logger
