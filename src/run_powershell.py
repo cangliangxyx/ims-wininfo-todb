@@ -1,10 +1,6 @@
-# src/run_powershell.py powershell执行PS_COMMAND
-
+# src/run_powershell.py
 import subprocess
-from config.settings import PS_COMMAND
-
-import subprocess
-from config.settings import PS_COMMAND
+import sys
 from src.save_result import save_result
 
 def run_powershell(command: str) -> str:
@@ -21,10 +17,17 @@ def run_powershell(command: str) -> str:
 
 
 if __name__ == "__main__":
-    try:
-        output = run_powershell(PS_COMMAND)
-        # 使用 save_result 写入日志
-        save_result(output, PS_COMMAND, None)
-    except Exception as e:
-        save_result(None, PS_COMMAND, str(e))
+    # 允许传入命令行参数，便于单独测试
+    if len(sys.argv) < 2:
+        print("Usage: python run_powershell.py '<PowerShell Command>'")
+        sys.exit(1)
 
+    ps_command = sys.argv[1]
+
+    try:
+        output = run_powershell(ps_command)
+        save_result(output, ps_command, None)
+        print("执行成功，结果已保存到 data.json")
+    except Exception as e:
+        save_result(None, ps_command, str(e))
+        print(f"执行失败: {e}")

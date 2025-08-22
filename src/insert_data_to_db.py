@@ -3,10 +3,10 @@ import sys
 import json
 from datetime import datetime
 import pymysql
-from pymysql.err import OperationalError, InternalError, DatabaseError
 from config.settings import get_database_config
 from src.decrypt_message import decrypt_message
 from src.logger import log
+
 
 def build_db_connection_params(db_env):
     db_config = get_database_config(db_env)
@@ -25,6 +25,7 @@ def build_db_connection_params(db_env):
         log(f"缺少配置项: {e}", f"Missing config item: {e}")
         raise ValueError(f"缺少必要的配置项: {e}")
 
+
 def get_db_connection(env):
     try:
         connection_params = build_db_connection_params(env)
@@ -35,7 +36,7 @@ def get_db_connection(env):
         log(f"数据库连接失败: {e}", f"Database connection failed: {e}")
         raise
 
-def insert_rds_license(env="prod"):
+def insert_rds_license(env="prod", sql):
     """读取 exe/script 路径 log/data.json 并插入 Infra_Daily_Check"""
     conn = get_db_connection(env)
 
@@ -46,7 +47,7 @@ def insert_rds_license(env="prod"):
     try:
         with open(json_path, "r", encoding="utf-8") as f:
             json_data = json.load(f)
-        rds_json_str = json.dumps(json_data, ensure_ascii=False)
+        json_str = json.dumps(json_data, ensure_ascii=False)
         log(f"读取 JSON 文件成功: {json_path}", f"Read JSON file successfully: {json_path}")
     except Exception as e:
         log(f"读取 JSON 文件失败: {e}", f"Failed to read JSON file: {e}")
@@ -54,21 +55,17 @@ def insert_rds_license(env="prod"):
 
     creat_time = datetime.now().strftime("%Y-%m-%d")
     insert_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sql = """
-        INSERT INTO Infra_Daily_Check (Creat_Time, rds_prod_license, Insert_Time)
-        VALUES (%s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            rds_prod_license = VALUES(rds_prod_license),
-            Insert_Time = VALUES(Insert_Time)
-    """
-    values = (creat_time, rds_json_str, insert_time)
+
+
+
+    values = (creat_time, json_str, insert_time)
 
     try:
         cursor = conn.cursor()
         cursor.execute(sql, values)
         conn.commit()
-        log(f"成功将 RDS License 插入数据库，影响行数: {cursor.rowcount}",
-            f"Successfully inserted RDS License into database, affected rows: {cursor.rowcount}")
+        log(f"成功将数据插入数据库，影响行数: {cursor.rowcount}",
+            f"Successfully inserted data into database , affected rows: {cursor.rowcount}")
         cursor.close()
     except Exception as e:
         log(f"插入数据库失败: {e}", f"Failed to insert into database: {e}")
@@ -76,6 +73,7 @@ def insert_rds_license(env="prod"):
         raise
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     insert_rds_license("prod")

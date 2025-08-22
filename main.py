@@ -3,8 +3,11 @@ import os
 import sys
 from src.run_powershell import run_powershell
 from src.save_result import save_result
-from src.insert_data_to_db import insert_rds_license
-from config.settings import PS_COMMAND
+from src.insert_data_to_db import insert_daily_check
+from config.settings import (
+    PS_COMMAND_RDS, INSERT_RDS_SQL,
+    PS_COMMAND_WSUS, INSERT_WSUS_SQL
+)
 
 STOP_FILE = "stop.flag"
 
@@ -26,20 +29,21 @@ def log(msg: str, console_msg: str = None):
         f.write(f"[{timestamp}] {msg}\n")
     print(f"[{timestamp}] {console_msg or msg}")
 
-def job():
+
+def job(command, sql, env="prod"):
     """执行 PowerShell 并保存结果，同时插入数据库"""
     # -------------------------------
     # 1. 执行 PowerShell 命令
     # -------------------------------
     try:
-        output = run_powershell(PS_COMMAND)
-        save_result(output, PS_COMMAND, None)
+        output = run_powershell(command)
+        save_result(output, command, None)
         log(
             "PowerShell 执行成功，结果已保存到 data.json",
             "1. PowerShell executed successfully, result saved to data.json"
         )
     except Exception as e:
-        save_result(None, PS_COMMAND, str(e))
+        save_result(None, command, str(e))
         log(
             f"PowerShell 执行失败，错误已记录: {e}",
             f"1. PowerShell execution failed, error logged: {e}"
@@ -50,7 +54,7 @@ def job():
     # 2. 插入数据库
     # -------------------------------
     try:
-        insert_rds_license(env="prod")
+        insert_daily_check(env=env, sql=sql)
         log(
             "data.json 成功插入数据库",
             "2. data.json successfully inserted into database"
@@ -69,7 +73,17 @@ def job():
         "3. Job completed, waiting for next execution"
     )
 
-def main():
+
+def main(project="RDS", env="prod"):
+    """根据项目选择不同的 command 和 sql"""
+    if project.upper() == "RDS":
+        command, sql = PS_COMMAND_RDS, INSERT_RDS_SQL
+    elif project.upper() == "WSUS":
+        command, sql = PS_COMMAND_WSUS, INSERT_WSUS_SQL
+    else:
+        log(f"未知项目: {project}", f"Unknown project: {project}")
+        return
+
     stop_path = os.path.join(BASE_DIR, STOP_FILE)
     log("程序启动，开始后台运行...", "Program started, running in background...")
 
@@ -79,7 +93,7 @@ def main():
                 log("检测到 stop.flag，程序即将退出", "stop.flag detected, program exiting...")
                 break
 
-            job()
+            job(command, sql, env=env)
             log("等待 12 小时后再次执行...", "Waiting 12 hours before next execution...")
 
             # 分段睡眠，每分钟检查 stop.flag
@@ -92,5 +106,8 @@ def main():
     except KeyboardInterrupt:
         log("程序收到 Ctrl+C 停止，正在退出...", "KeyboardInterrupt received, exiting program...")
 
+
 if __name__ == "__main__":
-    main()
+    project = sys.argv[1] if len(sys.argv) > 1 else "RDS"
+    env = sys.argv[2] if len(sys.argv) > 2 else "prod"
+    main(project, env)
