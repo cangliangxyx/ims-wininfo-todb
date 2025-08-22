@@ -1,7 +1,7 @@
 import subprocess
 import json
-from src.utils.settings import PS_COMMAND
-from src.utils.logger_config import configure_logger, set_file_paths
+from config.settings import PS_COMMAND
+from bak.src.utils.logger_config import configure_logger, set_file_paths
 
 # 调用日志配置模块进行配置
 logger = configure_logger("excutor")

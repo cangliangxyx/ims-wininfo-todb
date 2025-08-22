@@ -22,13 +22,6 @@ DATABASE_CONFIG = {
 # PowerShell 命令配置
 PS_COMMAND = "Get-WmiObject Win32_TSLicenseKeyPack | Select-Object KeyPackId, ProductVersion, TypeAndModel, AvailableLicenses, IssuedLicenses | ConvertTo-Json"
 
-# def project_path():
-#     if getattr(sys, 'frozen', True):
-#         base_path = "C:\wininfo_todb"
-#     else:
-#         base_path = os.path.abspath("..")
-#     return base_path
-
 def get_database_config(env) -> dict:
     if env == "test":
         return DATABASE_CONFIG["test"]

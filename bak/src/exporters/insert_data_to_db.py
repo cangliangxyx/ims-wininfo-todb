@@ -1,7 +1,6 @@
 import pymysql
-from src.utils.settings import get_database_config
-from src.utils.db_utils import get_db_connection
-from src.utils.logger_config import configure_logger
+from bak.src.utils.db_utils import get_db_connection
+from bak.src.utils.logger_config import configure_logger
 
 logger = configure_logger()
 

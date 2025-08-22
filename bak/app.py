@@ -1,6 +1,6 @@
 import schedule, time
-from src.utils.logger_config import configure_logger
-from src.exporters import insert_data_to_db, executor
+from bak.src.utils.logger_config import configure_logger
+from bak.src.exporters import executor, insert_data_to_db
 
 # 调用日志配置模块进行配置
 logger = configure_logger("app")
@@ -31,3 +31,5 @@ def schedule_daily_task():
 
 if __name__ == "__main__":
     schedule_daily_task()
+
+#python 开发项目，执行powershell后的结果以json格式存储到log/data.json，配置文件中包含powershell的commmand
