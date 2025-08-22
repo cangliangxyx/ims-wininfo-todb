@@ -1,0 +1,33 @@
+[
+    {
+        "KeyPackId": 2,
+        "ProductVersion": "Windows 2000 Server",
+        "TypeAndModel": "Built-in TS Per Device CAL",
+        "AvailableLicenses": 4294967295,
+        "IssuedLicenses": 0
+    },
+    {
+        "KeyPackId": 8,
+        "ProductVersion": "Windows Server 2016",
+        "TypeAndModel": "RDS Per User CAL",
+        "AvailableLicenses": 0,
+        "IssuedLicenses": 2
+    },
+    {
+        "KeyPackId": 9,
+        "ProductVersion": "Windows Server 2016",
+        "TypeAndModel": "RDS Per User CAL",
+        "AvailableLicenses": 3,
+        "IssuedLicenses": 3
+    },
+    {
+        "KeyPackId": 3,
+        "ProductVersion": "Windows Server 2019",
+        "TypeAndModel": "RDS Per User CAL",
+        "AvailableLicenses": 41,
+        "IssuedLicenses": 59
+    }
+]
+
+
+

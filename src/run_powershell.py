@@ -3,6 +3,10 @@
 import subprocess
 from config.settings import PS_COMMAND
 
+import subprocess
+from config.settings import PS_COMMAND
+from src.save_result import save_result
+
 def run_powershell(command: str) -> str:
     """运行 PowerShell 命令并返回结果"""
     result = subprocess.run(
@@ -19,6 +23,8 @@ def run_powershell(command: str) -> str:
 if __name__ == "__main__":
     try:
         output = run_powershell(PS_COMMAND)
-        print("PowerShell 执行结果:\n", output)
+        # 使用 save_result 写入日志
+        save_result(output, PS_COMMAND, None)
     except Exception as e:
-        print("❌ 出错:", e)
+        save_result(None, PS_COMMAND, str(e))
+
