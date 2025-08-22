@@ -36,8 +36,15 @@ def get_db_connection(env):
         log(f"数据库连接失败: {e}", f"Database connection failed: {e}")
         raise
 
-def insert_rds_license(env="prod", sql):
-    """读取 exe/script 路径 log/data.json 并插入 Infra_Daily_Check"""
+
+def insert_daily_check(env="prod", sql=None):
+    """
+    读取 exe/script 路径 log/data.json 并插入数据库
+    sql: 外部传入的 INSERT 语句，适配不同项目 (RDS / WSUS / ...)
+    """
+    if not sql:
+        raise ValueError("必须传入 SQL 插入语句")
+
     conn = get_db_connection(env)
 
     base_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
@@ -55,9 +62,6 @@ def insert_rds_license(env="prod", sql):
 
     creat_time = datetime.now().strftime("%Y-%m-%d")
     insert_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
-
     values = (creat_time, json_str, insert_time)
 
     try:
@@ -65,7 +69,7 @@ def insert_rds_license(env="prod", sql):
         cursor.execute(sql, values)
         conn.commit()
         log(f"成功将数据插入数据库，影响行数: {cursor.rowcount}",
-            f"Successfully inserted data into database , affected rows: {cursor.rowcount}")
+            f"Successfully inserted data into database, affected rows: {cursor.rowcount}")
         cursor.close()
     except Exception as e:
         log(f"插入数据库失败: {e}", f"Failed to insert into database: {e}")
@@ -73,7 +77,3 @@ def insert_rds_license(env="prod", sql):
         raise
     finally:
         conn.close()
-
-
-if __name__ == "__main__":
-    insert_rds_license("prod")
