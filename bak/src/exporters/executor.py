@@ -6,6 +6,15 @@ from bak.src.utils.logger_config import configure_logger, set_file_paths
 # 调用日志配置模块进行配置
 logger = configure_logger("excutor")
 
+def read_powershell_output(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            output = f.read()
+        return output
+    except Exception as e:
+        logger.error(f"读取 {file_path} 失败: {e}")
+        return None
+
 def execute_powershell_command():
     try:
         logger.info("执行 PowerShell 命令...")
@@ -18,6 +27,8 @@ def execute_powershell_command():
         return [data] if isinstance(data, dict) else data
     except subprocess.CalledProcessError as e:
         logger.error(f"PowerShell 执行失败: {e}")
+        # output = read_powershell_output('log/output_powershell.txt')
+        return None
     except json.JSONDecodeError as e:
         logger.error(f"JSON 解析失败: {e}")
     except Exception as e:
@@ -40,4 +51,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    print(read_powershell_output("log/output_powershell.txt"))
 

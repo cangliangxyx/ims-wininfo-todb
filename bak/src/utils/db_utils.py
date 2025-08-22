@@ -1,5 +1,6 @@
 #db_utils.py
-import pymysql
+
+import pymysql, datetime
 from pymysql.err import OperationalError, InternalError, DatabaseError
 from config.settings import get_database_config
 from bak.src.utils.logger_config import configure_logger
