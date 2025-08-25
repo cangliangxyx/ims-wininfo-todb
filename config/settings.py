@@ -19,16 +19,8 @@ DATABASE_CONFIG = {
     }
 }
 
-# PowerShell 命令配置
-PS_COMMAND_WSUS = """
-$result = [PSCustomObject]@{
-    Computer_Needing_Updates = (Get-WsusComputer -ComputerUpdateStatus Needed |
-        Where-Object { $_.OSDescription -notmatch "Windows 10 Enterprise" }).Count
-    Computer_With_Error = (Get-WsusComputer -ComputerUpdateStatus Failed |
-        Where-Object { $_.OSDescription -notmatch "Windows 10 Enterprise" }).Count
-}
-$result | ConvertTo-Json -Depth 3
-"""
+# PowerShell 由于授权原因需要只能执行相关的powershell脚本,脚本存储位置为以下路径
+PS_COMMAND_WSUS = r"C:\wininfo_to_db\wsus_check.ps1"
 
 PS_COMMAND_RDS = """
 Get-WmiObject Win32_TSLicenseKeyPack |
@@ -46,10 +38,10 @@ INSERT_RDS_SQL = """
 """
 
 INSERT_WSUS_SQL = """
-    INSERT INTO Infra_Daily_Check (Creat_Time, wsus_server, Insert_Time)
+    INSERT INTO Infra_Daily_Check (Creat_Time, wsus_server_info, Insert_Time)
     VALUES (%s, %s, %s)
     ON DUPLICATE KEY UPDATE
-        wsus_server = VALUES(wsus_server),
+        wsus_server_info = VALUES(wsus_server_info),
         Insert_Time = VALUES(Insert_Time)
 """
 

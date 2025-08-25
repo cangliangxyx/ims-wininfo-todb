@@ -73,8 +73,7 @@ def job(command, sql, env="prod"):
         "3. Job completed, waiting for next execution"
     )
 
-
-def main(project="RDS", env="prod"):
+def main(project="WSUS", env="prod"):
     """根据项目选择不同的 command 和 sql"""
     if project.upper() == "RDS":
         command, sql = PS_COMMAND_RDS, INSERT_RDS_SQL
@@ -108,6 +107,7 @@ def main(project="RDS", env="prod"):
 
 
 if __name__ == "__main__":
-    project = sys.argv[1] if len(sys.argv) > 1 else "RDS"
+    # 需要根据不同需要修改默认值 WSUS
+    project = sys.argv[1] if len(sys.argv) > 1 else "WSUS"
     env = sys.argv[2] if len(sys.argv) > 2 else "prod"
     main(project, env)
