@@ -1,0 +1,15 @@
+# 根据不同需求选择不同的POWERSHELL命令和SQL
+PS_COMMAND: "dir"
+INSERT_SQL: ""
+# 定义运行时间的间隔（单位：分钟）
+EXECUTION_INTERVAL: 10
+# 定义插入数据环境 prod/test
+DB_ENV: prod
+
+# 收集 RDS 相关信息配置
+# PS_COMMAND: "Get-WmiObject Win32_TSLicenseKeyPack | Select-Object KeyPackId, ProductVersion, TypeAndModel, AvailableLicenses, IssuedLicenses | ConvertTo-Json"
+# INSERT_SQL: "INSERT INTO Infra_Daily_Check (Creat_Time, rds_prod_license, Insert_Time) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE rds_prod_license = VALUES(rds_prod_license), Insert_Time = VALUES(Insert_Time)"
+
+# 收集 WSUS 相关信息配置
+# PS_COMMAND: "C:\\wininfo_to_db\\wsus_check.ps1"
+# INSERT_SQL: "INSERT INTO Infra_Daily_Check (Creat_Time, wsus_server_info, Insert_Time) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE wsus_server_info = VALUES(wsus_server_info), Insert_Time = VALUES(Insert_Time)"

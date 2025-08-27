@@ -4,110 +4,93 @@ import sys
 from src.run_powershell import run_powershell
 from src.save_result import save_result
 from src.insert_data_to_db import insert_daily_check
-from config.settings import (
-    PS_COMMAND_RDS, INSERT_RDS_SQL,
-    PS_COMMAND_WSUS, INSERT_WSUS_SQL
-)
+from src.logger import log  # 日志模块
+from config.settings import ps_command, insert_sql, execution_interval
 
+# 停止标记文件名
 STOP_FILE = "stop.flag"
 
-def get_base_dir():
-    """获取程序根目录（exe 或脚本）"""
-    if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
-
-BASE_DIR = get_base_dir()
-LOG_DIR = os.path.join(BASE_DIR, "log")
-os.makedirs(LOG_DIR, exist_ok=True)
-LOG_FILE = os.path.join(LOG_DIR, "wininfo.log")
-
-def log(msg: str, console_msg: str = None):
-    """写入日志文件（中文）并打印控制台（英文）"""
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"[{timestamp}] {msg}\n")
-    print(f"[{timestamp}] {console_msg or msg}")
-
-
-def job(command, sql, env="prod"):
-    """执行 PowerShell 并保存结果，同时插入数据库"""
-    # -------------------------------
-    # 1. 执行 PowerShell 命令
-    # -------------------------------
+def execute_task(command: str, sql: str):
+    """
+    执行 PowerShell 脚本和数据库插入任务
+    :param command: PowerShell 脚本命令
+    :param sql: 数据库插入 SQL
+    """
+    # 1. 执行 PowerShell 脚本
     try:
         output = run_powershell(command)
         save_result(output, command, None)
         log(
-            "PowerShell 执行成功，结果已保存到 data.json",
-            "1. PowerShell executed successfully, result saved to data.json"
+            f"PowerShell 执行成功，结果已保存到 data.json\n执行结果: {output}",
+            f"1. PowerShell executed successfully, result saved to data.json\nExecution Result: {output}"
         )
     except Exception as e:
         save_result(None, command, str(e))
-        log(
-            f"PowerShell 执行失败，错误已记录: {e}",
-            f"1. PowerShell execution failed, error logged: {e}"
-        )
+        log(f"PowerShell 执行失败，错误已记录: {e}", f"1. PowerShell execution failed, error logged: {e}")
         return
 
-    # -------------------------------
     # 2. 插入数据库
-    # -------------------------------
     try:
-        insert_daily_check(env=env, sql=sql)
-        log(
-            "data.json 成功插入数据库",
-            "2. data.json successfully inserted into database"
-        )
+        insert_daily_check(sql=sql)
+        log("data.json 成功插入数据库", "2. data.json successfully inserted into database")
     except Exception as e:
+        log(f"插入数据库失败: {e}", f"2. Failed to insert data.json into database: {e}")
+
+    # 3. 记录任务完成
+    log("任务完成，等待下一次执行", "3. Job completed, waiting for next execution")
+
+
+def main():
+    """
+    主程序入口，动态设定执行间隔和任务管理
+    """
+    # 获取配置文件中的 PowerShell 脚本命令和执行间隔
+    command = ps_command
+    sql = insert_sql
+    stop_path = os.path.join(os.getcwd(), STOP_FILE)
+
+    # 检查执行间隔有效性（分钟）
+    interval_minutes = execution_interval if isinstance(execution_interval, int) and execution_interval > 0 else 360
+    if interval_minutes != execution_interval:
         log(
-            f"插入数据库失败: {e}",
-            f"2. Failed to insert data.json into database: {e}"
+            f"EXECUTION_INTERVAL 配置无效，使用默认间隔：{interval_minutes} 分钟",
+            f"Invalid EXECUTION_INTERVAL, using default interval: {interval_minutes} minutes"
         )
+    # 转换为秒数
+    interval_seconds = interval_minutes * 60
 
-    # -------------------------------
-    # 3. 完成任务
-    # -------------------------------
-    log(
-        "任务完成，等待下一次执行",
-        "3. Job completed, waiting for next execution"
-    )
-
-def main(project="WSUS", env="prod"):
-    """根据项目选择不同的 command 和 sql"""
-    if project.upper() == "RDS":
-        command, sql = PS_COMMAND_RDS, INSERT_RDS_SQL
-    elif project.upper() == "WSUS":
-        command, sql = PS_COMMAND_WSUS, INSERT_WSUS_SQL
-    else:
-        log(f"未知项目: {project}", f"Unknown project: {project}")
-        return
-
-    stop_path = os.path.join(BASE_DIR, STOP_FILE)
+    # 启动任务
     log("程序启动，开始后台运行...", "Program started, running in background...")
 
     try:
         while True:
+            # 停止标记检测
             if os.path.exists(stop_path):
                 log("检测到 stop.flag，程序即将退出", "stop.flag detected, program exiting...")
                 break
 
-            job(command, sql, env=env)
-            log("等待 12 小时后再次执行...", "Waiting 12 hours before next execution...")
+            # 执行任务
+            execute_task(command, sql)
 
-            # 分段睡眠，每分钟检查 stop.flag
-            for _ in range(12 * 60):
+            # 等待下次执行
+            log(
+                f"等待 {interval_minutes} 分钟（{interval_seconds} 秒）后再次执行...",
+                f"Waiting {interval_minutes} minutes ({interval_seconds} seconds) before next execution..."
+            )
+
+            # 分段睡眠（每 5 分钟检查一次 stop.flag）
+            check_interval = 300  # 5 分钟
+            for _ in range(0, interval_seconds, check_interval):
                 if os.path.exists(stop_path):
                     log("检测到 stop.flag，程序即将退出", "stop.flag detected, program exiting...")
                     return
-                time.sleep(60)
+                time.sleep(min(check_interval, interval_seconds - _))
 
     except KeyboardInterrupt:
         log("程序收到 Ctrl+C 停止，正在退出...", "KeyboardInterrupt received, exiting program...")
+    except Exception as e:
+        log(f"程序运行异常: {e}", f"Unexpected error: {e}")
 
 
 if __name__ == "__main__":
-    # 需要根据不同需要修改默认值 WSUS
-    project = sys.argv[1] if len(sys.argv) > 1 else "WSUS"
-    env = sys.argv[2] if len(sys.argv) > 2 else "prod"
-    main(project, env)
+    main()

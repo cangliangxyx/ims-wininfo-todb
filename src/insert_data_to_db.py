@@ -8,8 +8,8 @@ from src.decrypt_message import decrypt_message
 from src.logger import log
 
 
-def build_db_connection_params(db_env):
-    db_config = get_database_config(db_env)
+def build_db_connection_params():
+    db_config = get_database_config()
     try:
         connection_params = {
             "host": db_config["host"],
@@ -19,25 +19,25 @@ def build_db_connection_params(db_env):
             "database": db_config["database"],
             "charset": db_config["charset"],
         }
-        log(f"成功构建数据库连接参数：{db_env}", f"Successfully build database connection parameters: {db_env}")
+        log(f"成功构建数据库连接参数：{db_config["host"]}", f"Successfully build database connection parameters: {db_config["host"]}")
         return connection_params
     except KeyError as e:
         log(f"缺少配置项: {e}", f"Missing config item: {e}")
         raise ValueError(f"缺少必要的配置项: {e}")
 
 
-def get_db_connection(env):
+def get_db_connection():
     try:
-        connection_params = build_db_connection_params(env)
+        connection_params = build_db_connection_params()
         connection = pymysql.connect(**connection_params)
-        log(f"成功连接到数据库，使用环境：{env}", f"Successfully connected to database: {env}")
+        log(f"成功连接到数据库", f"Successfully connected to database")
         return connection
     except Exception as e:
         log(f"数据库连接失败: {e}", f"Database connection failed: {e}")
         raise
 
 
-def insert_daily_check(env="prod", sql=None):
+def insert_daily_check(sql=None):
     """
     读取 exe/script 路径 log/data.json 并插入数据库
     sql: 外部传入的 INSERT 语句，适配不同项目 (RDS / WSUS / ...)
@@ -45,7 +45,7 @@ def insert_daily_check(env="prod", sql=None):
     if not sql:
         raise ValueError("必须传入 SQL 插入语句")
 
-    conn = get_db_connection(env)
+    conn = get_db_connection()
 
     base_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(base_dir, "log", "data.json")
