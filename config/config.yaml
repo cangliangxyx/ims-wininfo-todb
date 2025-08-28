@@ -3,12 +3,16 @@
 # PS_COMMAND格式： 1. 别名：“命令” 2.直接写命令如RDS和WSUS
 PS_COMMAND:
   list_dir: "dir | ConvertTo-Json"
-  service_info: "Get-Service123123 | ConvertTo-Json"
+  service_info: "Get-Service | ConvertTo-Json"
+
+# 定义数据环境 prod/test
+DB_ENV: prod
+
+# 插入数据库 sql
 INSERT_SQL: ""
+
 # 定义运行时间的间隔（单位：分钟）
 EXECUTION_INTERVAL: 10
-# 定义插入数据环境 prod/test
-DB_ENV: prod
 
 # 收集 RDS 相关信息配置
 # PS_COMMAND: "Get-WmiObject Win32_TSLicenseKeyPack | Select-Object KeyPackId, ProductVersion, TypeAndModel, AvailableLicenses, IssuedLicenses | ConvertTo-Json"
