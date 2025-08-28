@@ -19,7 +19,7 @@ def build_db_connection_params():
             "database": db_config["database"],
             "charset": db_config["charset"],
         }
-        log(f"成功构建数据库连接参数：{db_config["host"]}", f"Successfully build database connection parameters: {db_config["host"]}")
+        log(f"成功构建数据库连接参数：{db_config['host']}", f"Successfully build database connection parameters: {db_config['host']}")
         return connection_params
     except KeyError as e:
         log(f"缺少配置项: {e}", f"Missing config item: {e}")
