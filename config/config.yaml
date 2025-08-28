@@ -1,5 +1,9 @@
-# 根据不同需求选择不同的POWERSHELL命令和SQL
-PS_COMMAND: "dir"
+# config/config.yaml
+
+# PS_COMMAND格式： 1. 别名：“命令” 2.直接写命令如RDS和WSUS
+PS_COMMAND:
+  list_dir: "dir | ConvertTo-Json"
+  service_info: "Get-Service123123 | ConvertTo-Json"
 INSERT_SQL: ""
 # 定义运行时间的间隔（单位：分钟）
 EXECUTION_INTERVAL: 10

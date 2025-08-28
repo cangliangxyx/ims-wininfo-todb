@@ -2,7 +2,7 @@ import time
 import os
 import sys
 from src.run_powershell import run_powershell
-from src.save_result import save_result
+from src.save_result import save_command_result
 from src.insert_data_to_db import insert_daily_check
 from src.logger import log  # 日志模块
 from config.settings import ps_command, insert_sql, execution_interval
@@ -19,13 +19,13 @@ def execute_task(command: str, sql: str):
     # 1. 执行 PowerShell 脚本
     try:
         output = run_powershell(command)
-        save_result(output, command, None)
+        save_command_result(output, command, None)
         log(
             f"PowerShell 执行成功，结果已保存到 data.json\n执行结果: {output}",
             f"1. PowerShell executed successfully, result saved to data.json\nExecution Result: {output}"
         )
     except Exception as e:
-        save_result(None, command, str(e))
+        save_command_result(None, command, str(e))
         log(f"PowerShell 执行失败，错误已记录: {e}", f"1. PowerShell execution failed, error logged: {e}")
         return
 
