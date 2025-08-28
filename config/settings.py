@@ -1,6 +1,6 @@
 import os
 import sys
-import yaml  # 使用 PyYAML 来解析 YAML 文件
+import yaml
 
 DATABASE_CONFIG = {
     "prod": {

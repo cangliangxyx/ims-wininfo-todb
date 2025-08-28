@@ -1,10 +1,9 @@
 import time
 import os
-import sys
 from src.run_powershell import run_powershell
 from src.save_result import save_command_result
 from src.insert_data_to_db import insert_daily_check
-from src.logger import log  # 日志模块
+from src.logger import log
 from config.settings import ps_command, insert_sql, execution_interval
 
 # 停止标记文件名
