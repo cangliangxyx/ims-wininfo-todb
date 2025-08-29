@@ -8,8 +8,6 @@ from typing import Union, Dict, Any
 from src.decrypt_message import decrypt_message
 from config.settings import get_vsphere_config
 
-
-
 # 日志配置
 logging.basicConfig(
     level=logging.INFO,
@@ -20,15 +18,14 @@ logger = logging.getLogger("CISChecker")
 
 # vCenter 登录信息
 vsphere_config = get_vsphere_config()
-VCENTER_HOST = vsphere_config["host"]
-VCENTER_USER = vsphere_config["user"]
-VCENTER_PASS = decrypt_message(vsphere_config["password"])
+host = vsphere_config["host"]
+user = vsphere_config["user"]
+password = decrypt_message(vsphere_config["password"])
 
 LOGIN_CMD = (
-    f'Connect-VIServer -Server {VCENTER_HOST} '
-    f'-Protocol https -User "{VCENTER_USER}" -Password "{VCENTER_PASS}"'
+    f'Connect-VIServer -Server {host} '
+    f'-Protocol https -User "{user}" -Password "{password}"'
 )
-
 
 def run_powercli(command: str) -> Union[str, None]:
     """
@@ -42,7 +39,6 @@ def run_powercli(command: str) -> Union[str, None]:
         logger.error("命令执行失败 [%s]: %s", command, result.stderr.strip())
         return None
     return result.stdout.strip() or None
-
 
 def cis_check() -> Dict[str, Any]:
     """
@@ -68,14 +64,12 @@ def cis_check() -> Dict[str, Any]:
             logger.warning("%s 执行失败", alias)
     return results
 
-
 def save_results(results: Dict[str, Any], path: str = None):
     path = path or os.path.join(os.path.dirname(__file__), "log", "cis_results.json")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=4)
     logger.info("CIS 检查结果已保存到 %s", path)
-
 
 if __name__ == "__main__":
     cis_results = cis_check()
