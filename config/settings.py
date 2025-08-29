@@ -2,6 +2,15 @@ import os
 import sys
 import yaml
 
+# vsphere 配置 vc-tj-01.vsphere.aiib.org
+VSPHERE_CONFIG = {
+    "prod": {
+        "host": "vc-bj-01.vsphere.aiib.org",
+        "user":"psa-infra-pbi@aiib.org",
+        "password":"gAAAAABoJX45Du7Y4pvoMLqiIxX1UEDSYpSwCuLmfu7ZQMG1XEnNhLDRf-_LzvtdFDuYzHhEsfdwwfqt7UGSR53wdQTWtFq1NgtouVhFiaFcHx2VqcXjR3Q="
+        }
+    }
+
 DATABASE_CONFIG = {
     "prod": {
         "host": "10.36.24.253",
@@ -52,6 +61,11 @@ def get_database_config():
     else:
         return DATABASE_CONFIG["prod"]
 
+def get_vsphere_config():
+    """根据config.yaml中DB_ENV字段获取数据库配置"""
+    data  = VSPHERE_CONFIG["prod"]
+    return data
+
 
 # 加载配置
 CONFIG = load_config()
@@ -61,6 +75,7 @@ ps_command = CONFIG.get("PS_COMMAND", "")
 insert_sql = CONFIG.get("INSERT_SQL", "")
 execution_interval = CONFIG.get("EXECUTION_INTERVAL", "")
 database_config = get_database_config()
+
 # 测试代码
 if __name__ == "__main__":
     try:
@@ -68,6 +83,7 @@ if __name__ == "__main__":
         print(f"INSERT_SQL: {insert_sql}")
         print(f"EXECUTION_INTERVAL (seconds): {execution_interval}")
         print(f"Database Config: {database_config}")
+
     except Exception as e:
         print(f"配置加载失败: {e}")
         sys.exit(1)

@@ -1,7 +1,14 @@
+# src/vmware_cis_checker.py
+
 import subprocess
 import os
+import json
 import logging
-from typing import Union, List, Dict, Optional
+from typing import Union, Dict, Any
+from src.decrypt_message import decrypt_message
+from config.settings import get_vsphere_config
+
+
 
 # 日志配置
 logging.basicConfig(
@@ -9,66 +16,67 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[logging.StreamHandler()]
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("CISChecker")
+
+# vCenter 登录信息
+vsphere_config = get_vsphere_config()
+VCENTER_HOST = vsphere_config["host"]
+VCENTER_USER = vsphere_config["user"]
+VCENTER_PASS = decrypt_message(vsphere_config["password"])
+
+LOGIN_CMD = (
+    f'Connect-VIServer -Server {VCENTER_HOST} '
+    f'-Protocol https -User "{VCENTER_USER}" -Password "{VCENTER_PASS}"'
+)
 
 
-def run_powershell(command: Union[str, List[str], Dict[str, str], None]) -> Union[str, List[str], Dict[str, str], None]:
+def run_powercli(command: str) -> Union[str, None]:
     """
-    执行 PowerShell 命令或脚本，并返回执行结果。
-    支持:
-      - str : 单条命令
-      - list[str] : 多条命令
-      - dict[str, str] : 别名 -> 命令
-      - None / 空字符串 : 返回 None
+    执行单条 PowerCLI 命令，返回 stdout 或 None
     """
+    full_cmd = f"{LOGIN_CMD}; {command}"
+    cmd = ["powershell", "-ExecutionPolicy", "Bypass", "-NoProfile", "-Command", full_cmd]
 
-    # --- 兜底处理：None 或空字符串都直接返回 None ---
-    if command is None or (isinstance(command, str) and not command.strip()):
-        logger.warning("command 为空或 None，返回 None")
-        return None
-
-    # --- dict: 带别名的命令集 ---
-    if isinstance(command, dict):
-        logger.info("检测到带别名的命令字典，将依次执行")
-        results = {}
-        for alias, cmd in command.items():
-            results[alias] = run_powershell(cmd)  # 递归调用
-        return results
-
-    # --- list: 多条命令 ---
-    if isinstance(command, list):
-        logger.info("检测到多个 PowerShell 命令，将依次执行")
-        return [run_powershell(cmd) for cmd in command]
-
-    # --- 单条命令或脚本 ---
-    if os.path.isfile(command) and command.lower().endswith(".ps1"):
-        logger.debug(f"执行 PowerShell 脚本: {command}")
-        cmd = ["powershell", "-ExecutionPolicy", "Bypass", "-File", command]
-    else:
-        logger.debug(f"执行 PowerShell 命令: {command}")
-        cmd = ["powershell", "-ExecutionPolicy", "Bypass", "-Command", command]
-
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        encoding="utf-8"
-    )
-
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
     if result.returncode != 0:
-        logger.error(f"执行失败: {result.stderr.strip()}")
-        # 返回 None，而不是抛异常，中断流程
+        logger.error("命令执行失败 [%s]: %s", command, result.stderr.strip())
         return None
-
-    logger.info(f"命令执行成功 # {command}")
     return result.stdout.strip() or None
 
 
-if __name__ == "__main__":
-    from config.settings import ps_command
+def cis_check() -> Dict[str, Any]:
+    """
+    执行部分 VMware CIS 基准检查，返回 JSON 结果
+    """
+    checks = {
+        "no_1.2": 'Get-VMHost | Select-Object Name, @{Name="NTPSetting"; Expression={ ($_ | Get-VMHostNtpServer) }} | ConvertTo-Json -Depth 3',
+        "no_1.4": 'Get-VMHost | Get-AdvancedSetting -Name Mem.ShareForceSalting | Select-Object Name, Value, Type, Description | ConvertTo-Json -Depth 3'
+    }
 
-    try:
-        output = run_powershell(ps_command)
-        logger.info("执行结果:\n%s", output)
-    except Exception:
-        logger.exception("运行过程中发生错误")
+    results: Dict[str, Any] = {}
+    for alias, cmd in checks.items():
+        output = run_powercli(cmd)
+        if output:
+            try:
+                results[alias] = json.loads(output)
+                logger.info("%s 执行成功", alias)
+            except Exception:
+                results[alias] = {"raw_output": output}
+                logger.warning("%s 输出解析失败，保存原始结果", alias)
+        else:
+            results[alias] = None
+            logger.warning("%s 执行失败", alias)
+    return results
+
+
+def save_results(results: Dict[str, Any], path: str = None):
+    path = path or os.path.join(os.path.dirname(__file__), "log", "cis_results.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=4)
+    logger.info("CIS 检查结果已保存到 %s", path)
+
+
+if __name__ == "__main__":
+    cis_results = cis_check()
+    save_results(cis_results)
